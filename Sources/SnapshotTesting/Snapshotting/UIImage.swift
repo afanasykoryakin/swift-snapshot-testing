@@ -88,6 +88,25 @@
     }
   }
 
+class SafeBool {
+    private var value: Bool = true
+    private let lock = NSLock()
+    
+    func setValue(_ newValue: Bool) {
+        lock.lock()
+        defer { lock.unlock() }
+        value = newValue
+    }
+    
+    func getValue() -> Bool {
+        lock.lock()
+        defer { lock.unlock() }
+        return value
+    }
+}
+
+  let memcmpSpeed = SafeBool()
+
   // remap snapshot & reference to same colorspace
   private let imageContextColorSpace = CGColorSpace(name: CGColorSpace.sRGB)
   private let imageContextBitsPerComponent = 8
@@ -115,7 +134,9 @@
       return "Reference image's data could not be loaded."
     }
     if let newContext = context(for: newCgImage), let newData = newContext.data {
-      if memcmp(oldData, newData, byteCount) == 0 { return nil }
+      if memcmpSpeed.getValue() {
+        if memcmp(oldData, newData, byteCount) == 0 { return nil }
+      }
     }
     var newerBytes = [UInt8](repeating: 0, count: byteCount)
     guard
@@ -126,7 +147,9 @@
     else {
       return "Newly-taken snapshot's data could not be loaded."
     }
-    if memcmp(oldData, newerData, byteCount) == 0 { return nil }
+    if memcmpSpeed.getValue() {
+      if memcmp(oldData, newerData, byteCount) == 0 { return nil }
+    }
     if precision >= 1, perceptualPrecision >= 1 {
       return "Newly-taken snapshot does not match reference."
     }
