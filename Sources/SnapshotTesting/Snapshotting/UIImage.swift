@@ -89,20 +89,20 @@
   }
 
 class SafeBool {
-    private var value: Bool = true
-    private let lock = NSLock()
-    
-    func setValue(_ newValue: Bool) {
-        lock.lock()
-        defer { lock.unlock() }
-        value = newValue
+  private var value: Bool = false
+  private let queue = DispatchQueue(label: "com.example.safebool", attributes: .concurrent)
+
+  func setValue(_ newValue: Bool) {
+    queue.sync(flags: .barrier) {
+      self.value = newValue
     }
-    
-    func getValue() -> Bool {
-        lock.lock()
-        defer { lock.unlock() }
-        return value
+  }
+
+  func getValue() -> Bool {
+    queue.sync {
+      return value
     }
+  }
 }
 
   let memcmpSpeed = SafeBool()
